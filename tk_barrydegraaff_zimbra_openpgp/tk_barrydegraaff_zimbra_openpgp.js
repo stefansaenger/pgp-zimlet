@@ -136,8 +136,94 @@ tk_barrydegraaff_zimbra_openpgp.prototype.init = function() {
 	if (appCtxt.get(ZmSetting.MAIL_ENABLED)) {
 		AjxPackage.require({name:"MailCore", callback:new AjxCallback(this, this.addAttachmentHandler)});
 	}
-}
+   //ZmPreferencesApp creates the preferences application, we modify this function 
+   //to load our preferences page
+   var preferencesApp = ZmPreferencesApp.prototype._registerPrefs;
+   ZmPreferencesApp.prototype._registerPrefs = function(){
+      var retval = preferencesApp.apply(preferencesApp, arguments);
+      setTimeout("tk_barrydegraaff_zimbra_openpgp.prototype._createTreeView()", 1000);      
+      return retval;
+   }
+};
 
+/* Creates a menu option in the preferences app. 
+ * */
+tk_barrydegraaff_zimbra_openpgp.prototype._createTreeView =
+function() {
+   
+	var html = new Array();
+	var i = 0;
+	this.expandIconAndFolderTreeMap = new Array();
+	var prefApp = appCtxt.getApp("Options");
+
+
+	var overview = prefApp ? prefApp.getOverview() : null;
+	var element = overview.getHtmlElement();
+
+	var expandIconId = "tk_barrydegraaff_zimbra_openpgp_" + Dwt.getNextId();
+	this.expandIconAndFolderTreeMap[expandIconId] = new Array();
+
+   html[i++] = this._getFolderHTML({name:"&nbsp;&nbsp;OpenPGP", icon:"tk_barrydegraaff_zimbra_openpgp-panelIcon"}, expandIconId);
+
+   document.getElementById('zti__main_Options__PREF_PAGE_PREF_ZIMLETS').insertAdjacentHTML('beforebegin',html.join(""));
+		var menuitem = document.getElementById('tk_barrydegraaff_openpgp_prefAppMenuItem');
+      menuitem.onclick = AjxCallback.simpleClosure(this._handleTreeClick, this);
+};
+
+tk_barrydegraaff_zimbra_openpgp.prototype._handleTreeClick =
+function(ev) {
+   //to-do create preferences page like:
+   //jsapi-zimbra-doc860.zip/symbols/src/WebRoot_js_zimbraMail_prefs_view_ZmSharingPage.js.html
+   tk_barrydegraaff_zimbra_openpgp.prototype.displayDialog(3, tk_barrydegraaff_zimbra_openpgp.lang[tk_barrydegraaff_zimbra_openpgp.settings['language']][3], null);
+};
+
+tk_barrydegraaff_zimbra_openpgp.prototype._getFolderHTML =
+function(folder, expandIconId, childExpandIconId, isSubFolder, hasChild) {
+	var html = new Array();
+	var i = 0;
+	if (this.treeIdAndFolderItemMap == undefined) {
+		this.treeIdAndFolderItemMap = new Array();
+	}
+
+	html[i++] = "<div class='DwtComposite'>";
+	var id = "tk_barrydegraaff_openpgp_prefAppMenuItem";
+	this.treeIdAndFolderItemMap[id] = folder;
+	this.expandIconAndFolderTreeMap[expandIconId].push(id);
+	if (isSubFolder) {
+		this.expandIconAndFolderTreeMap[childExpandIconId].push(id);
+	}
+	console.log(id);
+   html[i++] = "<div class='DwtTreeItem' id='" + id + "'>";
+
+	html[i++] = "<TABLE width=100% cellpadding=\"1\" cellspacing=\"1\">";
+	html[i++] = "<TR>";
+	html[i++] = "<TD style=\"width:16px;height:16px\" align='center'>";
+	if (hasChild) {
+		html[i++] = "<div class=\"ImgNodeExpanded\" id= '" + childExpandIconId + "'/>";
+	} else {
+		html[i++] = AjxImg.getImageHtml("Blank_16");
+	}
+	html[i++] = "</TD>";
+	if (isSubFolder) {
+		html[i++] = "<TD style=\"width:16px;height:16px\" align='center'>";
+		html[i++] = AjxImg.getImageHtml("Blank_16");
+		html[i++] = "</TD>";
+	}
+	html[i++] = "<TD style=\"width:16px;height:16px\">";
+	html[i++] = AjxImg.getImageHtml(folder.icon);
+	html[i++] = "</TD>";
+	html[i++] = "<TD class='DwtTreeItem-Text' nowrap=''>";
+	html[i++] = folder.name;
+	html[i++] = "</TD>";
+	html[i++] = "<TD style=\"width:16px;height:16px\">";
+	html[i++] = AjxImg.getImageHtml("Blank_16");
+	html[i++] = "</TD>";
+	html[i++] = "</TR>";
+	html[i++] = "</TABLE>";
+	html[i++] = "</div>";
+	html[i++] = "</div>";
+	return html.join("");
+};
 
 /* Provide a link in the mail view to decrypt attachment sent via regular mime
  * */
